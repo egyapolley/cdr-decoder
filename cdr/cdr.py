@@ -32,19 +32,24 @@ class CdrFile(object):
         self.src_ip = ipaddress.IPv4Address(int(self.header[54:94][-8:], 16)).compressed
         self.lost_cdr = self.lost_cdrs()
         self.length_of_CDR_routeing_filter = int(self.content[96:100], 16)
-        self.CDR_routeing_filter = self.content[100: 100 + self.length_of_CDR_routeing_filter *2]
+        self.CDR_routeing_filter = self.content[100: 100 + self.length_of_CDR_routeing_filter * 2]
 
-        self.length_of_private_extension = int(self.content[100 + self.length_of_CDR_routeing_filter *2: 100 + self.length_of_CDR_routeing_filter *2 + 2], 16)
+        self.length_of_private_extension = int(self.content[
+                                               100 + self.length_of_CDR_routeing_filter * 2: 100 + self.length_of_CDR_routeing_filter * 2 + 2],
+                                               16)
 
         self.private_extension = ''
         if self.length_of_private_extension:
-            self.private_extension = self.content[100 + self.length_of_CDR_routeing_filter *2 + 2: 100 + self.length_of_CDR_routeing_filter *2 + 2 + self.length_of_private_extension]
+            self.private_extension = self.content[
+                                     100 + self.length_of_CDR_routeing_filter * 2 + 2: 100 + self.length_of_CDR_routeing_filter * 2 + 2 + self.length_of_private_extension]
 
         if self.hri == 'Beyond Rel-9':
-            hri_ext_hex = self.content[100 + self.length_of_CDR_routeing_filter *2 + 2 + self.length_of_private_extension + 2 : 100 + self.length_of_CDR_routeing_filter *2 + 2 + self.length_of_private_extension + 4]
+            hri_ext_hex = self.content[
+                          100 + self.length_of_CDR_routeing_filter * 2 + 2 + self.length_of_private_extension + 2: 100 + self.length_of_CDR_routeing_filter * 2 + 2 + self.length_of_private_extension + 4]
             self.hri_ext = ReleaseIDExt[int(hri_ext_hex, 16)]
         if self.lri == 'Beyond Rel-9':
-            lri_ext_hex = self.content[100 + self.length_of_CDR_routeing_filter *2 + 2 + self.length_of_private_extension + 4 : 100 + self.length_of_CDR_routeing_filter *2 + 2 + self.length_of_private_extension + 6]
+            lri_ext_hex = self.content[
+                          100 + self.length_of_CDR_routeing_filter * 2 + 2 + self.length_of_private_extension + 4: 100 + self.length_of_CDR_routeing_filter * 2 + 2 + self.length_of_private_extension + 6]
             self.lri_ext = ReleaseIDExt[int(lri_ext_hex, 16)]
 
         hrelease = 'Rel-11'
@@ -56,8 +61,8 @@ class CdrFile(object):
         self.hvi = TSNumber[hrelease][int(self.content[16:18], 16) & 31]
         self.lvi = TSNumber[lrelease][int(self.content[18:20], 16) & 31]
 
-        self.high_release_encoding = ' '.join(['TS'+self.hvi, hrelease,])
-        self.low_release_encoding = ' '.join(['TS ' + self.lvi, lrelease,])
+        self.high_release_encoding = ' '.join(['TS' + self.hvi, hrelease, ])
+        self.low_release_encoding = ' '.join(['TS ' + self.lvi, lrelease, ])
 
     def open(self):
         with open(self.path, 'rb') as cdrfile:
@@ -75,6 +80,7 @@ class CdrFile(object):
         d['src_ip'] = self.src_ip
         d['high_release_encoding'] = self.high_release_encoding
         d['low_release_encoding'] = self.low_release_encoding
+        print(d)
         return d
 
     @staticmethod
@@ -98,10 +104,10 @@ class CdrFile(object):
         dev = '-'
         if (t >> 11) & 1:
             dev = '+'
-        dev = 'UTC'+dev
+        dev = 'UTC' + dev
         tdhh = str((t >> 6) & 31).zfill(2)
         tdmn = str(t & 63).zfill(2)
-        return mm + '-' + dd + ' '+ hh + ':' + mn + ' ' + dev + tdhh + ':' + tdmn
+        return mm + '-' + dd + ' ' + hh + ':' + mn + ' ' + dev + tdhh + ':' + tdmn
 
     def lost_cdrs(self):
         data = self.content[94:96]
@@ -122,7 +128,7 @@ class CdrFile(object):
         else:
             # MSB = 0
             if int(data, 16) < 127:
-                result = str(int(data, 16) << 1) +' or more'
+                result = str(int(data, 16) << 1) + ' or more'
             else:
                 result = '127 or more'
 
@@ -152,9 +158,9 @@ class CdrFile(object):
                 decoded_cdr = clean_output(decoded_cdr)
 
             if i == 1:
-                yield decoded_header, i, decoded_cdr
+                yield decoded_header, i, decoded_cdr, self.nr_records
             else:
-                yield '', i, decoded_cdr
+                yield '', i, decoded_cdr, self.nr_records
             i += 1
 
 
@@ -169,7 +175,7 @@ class Cdr(Asn1Tag):
             while d:
                 ch = Cdr(raw=d, parent=self)
                 chl.append(ch)
-                d = d[(ch.tag[1] + ch.length[0] + ch.length[1]) * 2 :]
+                d = d[(ch.tag[1] + ch.length[0] + ch.length[1]) * 2:]
         return chl
 
     @staticmethod
@@ -187,7 +193,7 @@ class Cdr(Asn1Tag):
             dv = ipaddress.IPv4Address(int(v[:8], 16)).compressed
         elif vt == 'ChargingID':
             # convert to decimal ???????
-            dv = v
+            dv = int(v, 16)
         elif vt in ['AccessPointNameNI', 'NodeID']:
             #
             dv = str(binascii.unhexlify(v))[2:-1]
@@ -217,8 +223,9 @@ class Cdr(Asn1Tag):
             hhmmss = ':'.join([v[i:i + 2] for i in range(6, 12, 2)])
             tz = chr(int(v[-6:-4], 16)) + v[-4:]
             dv = yyyy + '-' + mmdd + ' ' + hhmmss + ' ' + tz
-        elif vt in ['CallDuration', 'DataVolumeGPRS', 'INTEGER', 'LocalSequenceNumber', 'RatingGroupId',
+        elif vt in ['CallDuration', 'INTEGER', 'DataVolumeGPRS', 'LocalSequenceNumber', 'RatingGroupId',
                     'ChargingCharacteristics']:
+
             #
             dv = int(v, 16)
         elif vt == 'MSTimeZone':
@@ -249,7 +256,7 @@ class Cdr(Asn1Tag):
             dv = v[2:]
             if len(dv) == 24:
                 tai = dv[:10]
-                ecgi= dv[10:]
+                ecgi = dv[10:]
 
                 tai_mcc_mnc = decode_e212(tai[:6]).replace('f', '')
                 tac = tai[6:]
@@ -274,8 +281,9 @@ class Cdr(Asn1Tag):
             dv = v
         return dv
 
-    def to_json(self, defs=records_defs['pGWRecord']):
+    def to_json(self, defs=records_defs['sGWRecord']):
         d = DefaultOrderedDict()
+        print(self.tag[0])
         d['Name'] = defs[self.tag[0]]['name']
         d['Class'] = asn1_classes[self.cla]
         d['Type'] = asn1_types[self.type]
@@ -290,10 +298,11 @@ class Cdr(Asn1Tag):
                 d['Children'].append(c.to_json(defs=defs[c.parent.tag[0]]['children']))
         return d
 
-    def to_simple_json(self, defs=records_defs['pGWRecord']):
+    def to_simple_json(self, defs=records_defs['sGWRecord']):
         d = DefaultOrderedDict()
         if asn1_types[self.type] == 'primitive':
-            d[defs[self.tag[0]]['name']] = self.decode_val(defs[self.tag[0]]['name'], asn1_types[self.type], self.data, defs[self.tag[0]]['type'])
+            d[defs[self.tag[0]]['name']] = self.decode_val(defs[self.tag[0]]['name'], asn1_types[self.type], self.data,
+                                                           defs[self.tag[0]]['type'])
         else:
             d[defs[self.tag[0]]['name']] = []
             for c in self.children:

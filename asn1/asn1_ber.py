@@ -37,6 +37,7 @@ class Asn1Tag(object):
     def get_length(self):
         lc = self.raw[(self.get_tag()[1]) * 2:]
         if int(lc[:2], 16) == 128:
+            print("error")
             return 'NA', 'NA'
 
         elif int(lc[:2], 16) < 128:
@@ -49,6 +50,7 @@ class Asn1Tag(object):
             length = int(lc[2:2+len_length*2], 16)
             len_length_field = len_length + 1
         else:
+            print("error")
             return 'Could not determine this value\'s range {}'.format(int(lc[:2], 16))
         return length, len_length_field
 
