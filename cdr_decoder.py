@@ -64,7 +64,6 @@ def main():
                             decoded_cdr += ','
                         with open(destination_file, 'a') as f:
                             if decoded_header and len(decoded_header) > 1:
-                                print("decoded header", len(decoded_header))
                                 f.write("[")
                                 f.write(decoded_header)
                             f.write(decoded_cdr)

@@ -80,7 +80,6 @@ class CdrFile(object):
         d['src_ip'] = self.src_ip
         d['high_release_encoding'] = self.high_release_encoding
         d['low_release_encoding'] = self.low_release_encoding
-        print(d)
         return d
 
     @staticmethod
@@ -283,7 +282,6 @@ class Cdr(Asn1Tag):
 
     def to_json(self, defs=records_defs['sGWRecord']):
         d = DefaultOrderedDict()
-        print(self.tag[0])
         d['Name'] = defs[self.tag[0]]['name']
         d['Class'] = asn1_classes[self.cla]
         d['Type'] = asn1_types[self.type]
